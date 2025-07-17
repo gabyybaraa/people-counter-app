@@ -11,12 +11,13 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  intl: ^0.20.2 
   
   # HTTP client for API calls
   http: ^1.1.0
   
   # WebSocket support for real-time updates
-  web_socket_channel: ^2.4.0
+  web_socket_channel: ^3.0.3
   
   cupertino_icons: ^1.0.2
 
@@ -24,7 +25,7 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
 
-  flutter_lints: ^2.0.0
+  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true

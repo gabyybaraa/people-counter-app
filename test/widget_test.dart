@@ -12,20 +12,20 @@ import 'package:people_counter/main.dart';
 void main() {
   testWidgets('People counter app smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(PeopleCounterApp());
+    await tester.pumpWidget(const PeopleCounterApp());
 
     // Verify that the app title is displayed
     expect(find.text('People Counter'), findsOneWidget);
-    
+
     // Verify that we have multiple zeros (main count + statistics)
     expect(find.text('0'), findsNWidgets(3));
-    
+
     // Verify that connection status elements exist
     expect(find.text('Current Count'), findsOneWidget);
     expect(find.text('People Inside'), findsOneWidget);
     expect(find.text('Total Entered'), findsOneWidget);
     expect(find.text('Total Exited'), findsOneWidget);
-    
+
     // Verify that control buttons exist
     expect(find.text('Reset Counter'), findsOneWidget);
     expect(find.text('Sync Data'), findsOneWidget);
