@@ -1,0 +1,39 @@
+# Library Requirements for RX_door1 - Door 1 IR Receiver Controller
+
+## Required Libraries
+
+### Core ESP8266 Libraries
+- **ESP8266WiFi.h** - WiFi functionality for ESP8266
+- **ESP8266HTTPClient.h** - HTTP client for API communication
+- **WiFiClient.h** - WiFi client support
+
+## Installation Instructions
+
+### Arduino IDE Library Manager
+1. Open Arduino IDE
+2. Go to Tools > Manage Libraries
+3. Search for and install:
+   - "ESP8266WiFi" (usually comes with ESP8266 board package)
+   - "ESP8266HTTPClient" (usually comes with ESP8266 board package)
+
+### Manual Installation
+If libraries are not available through Library Manager:
+1. Download ESP8266 board package
+2. Ensure ESP8266 board is selected in Tools > Board
+3. Libraries should be automatically available
+
+## Board Configuration
+- **Board**: NodeMCU 1.0 (ESP-12E Module)
+- **Upload Speed**: 115200
+- **CPU Frequency**: 80 MHz
+- **Flash Size**: 4M (1M SPIFFS)
+- **Port**: Select appropriate COM port
+
+## Dependencies
+- ESP8266 Arduino Core (2.7.4 or later recommended)
+- Arduino IDE 1.8.13 or later
+
+## Notes
+- These libraries are part of the ESP8266 Arduino core
+- No additional third-party libraries required
+- Ensure ESP8266 board package is installed and up to date 

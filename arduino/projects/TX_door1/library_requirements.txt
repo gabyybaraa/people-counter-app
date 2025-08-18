@@ -1,0 +1,49 @@
+# Library Requirements for TX_door1 - Dual TX Master Hub
+
+## Required Libraries
+
+### Core ESP8266 Libraries
+- **ESP8266WiFi.h** - WiFi functionality for ESP8266
+- **ESP8266HTTPClient.h** - HTTP client for API communication
+- **WiFiClient.h** - WiFi client support
+
+### Additional Libraries
+- **ESPAsyncTCP.h** - Asynchronous TCP support
+- **ESPAsyncWebServer.h** - Asynchronous web server
+- **EEPROM.h** - Persistent storage
+
+## Installation Instructions
+
+### Arduino IDE Library Manager
+1. Open Arduino IDE
+2. Go to Tools > Manage Libraries
+3. Search for and install:
+   - "ESP8266WiFi" (usually comes with ESP8266 board package)
+   - "ESP8266HTTPClient" (usually comes with ESP8266 board package)
+   - "ESPAsyncTCP" by dvarrel
+   - "ESPAsyncWebServer" by dvarrel
+
+### Manual Installation
+If libraries are not available through Library Manager:
+1. Download ESP8266 board package
+2. Download ESPAsyncTCP and ESPAsyncWebServer from GitHub
+3. Place in Arduino libraries folder
+4. Ensure ESP8266 board is selected in Tools > Board
+
+## Board Configuration
+- **Board**: NodeMCU 1.0 (ESP-12E Module)
+- **Upload Speed**: 115200
+- **CPU Frequency**: 80 MHz
+- **Flash Size**: 4M (1M SPIFFS)
+- **Port**: Select appropriate COM port
+
+## Dependencies
+- ESP8266 Arduino Core (2.7.4 or later recommended)
+- Arduino IDE 1.8.13 or later
+- ESPAsyncTCP library
+- ESPAsyncWebServer library
+
+## Notes
+- ESPAsyncTCP and ESPAsyncWebServer provide better web server performance
+- These libraries enable the web dashboard functionality
+- Ensure all libraries are properly installed before uploading 
