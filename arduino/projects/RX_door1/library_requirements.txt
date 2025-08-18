@@ -1,39 +1,31 @@
-# Library Requirements for RX_door1 - Door 1 IR Receiver Controller
+# Library Requirements for RX_door1
 
 ## Required Libraries
+Install these libraries in Arduino IDE:
 
-### Core ESP8266 Libraries
-- **ESP8266WiFi.h** - WiFi functionality for ESP8266
-- **ESP8266HTTPClient.h** - HTTP client for API communication
-- **WiFiClient.h** - WiFi client support
+### 1. ESP8266WiFi
+- **Purpose**: WiFi connectivity for ESP8266
+- **Installation**: Tools → Board → ESP8266 Boards → ESP8266WiFi
+- **Version**: Latest stable version
 
-## Installation Instructions
+### 2. ESP8266HTTPClient  
+- **Purpose**: HTTP client for sending data to Master Hub
+- **Installation**: Tools → Board → ESP8266 Boards → ESP8266HTTPClient
+- **Version**: Latest stable version
 
-### Arduino IDE Library Manager
+### 3. WiFiClient
+- **Purpose**: WiFi client functionality
+- **Installation**: Tools → Board → ESP8266 Boards → WiFiClient
+- **Version**: Latest stable version
+
+## Installation Steps
 1. Open Arduino IDE
-2. Go to Tools > Manage Libraries
-3. Search for and install:
-   - "ESP8266WiFi" (usually comes with ESP8266 board package)
-   - "ESP8266HTTPClient" (usually comes with ESP8266 board package)
-
-### Manual Installation
-If libraries are not available through Library Manager:
-1. Download ESP8266 board package
-2. Ensure ESP8266 board is selected in Tools > Board
-3. Libraries should be automatically available
-
-## Board Configuration
-- **Board**: NodeMCU 1.0 (ESP-12E Module)
-- **Upload Speed**: 115200
-- **CPU Frequency**: 80 MHz
-- **Flash Size**: 4M (1M SPIFFS)
-- **Port**: Select appropriate COM port
-
-## Dependencies
-- ESP8266 Arduino Core (2.7.4 or later recommended)
-- Arduino IDE 1.8.13 or later
+2. Go to Tools → Board → ESP8266 Boards
+3. Select "NodeMCU 1.0 (ESP-12E Module)" or compatible ESP8266 board
+4. Install required libraries from Library Manager
+5. Verify all libraries are available
 
 ## Notes
-- These libraries are part of the ESP8266 Arduino core
-- No additional third-party libraries required
-- Ensure ESP8266 board package is installed and up to date 
+- All libraries are part of the ESP8266 core
+- No external third-party libraries required
+- Ensure ESP8266 board package is installed 

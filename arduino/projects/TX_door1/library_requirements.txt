@@ -1,34 +1,33 @@
 # Library Requirements for TX_door1 - Dual TX Master Hub
 
 ## Required Libraries
+Install these libraries in Arduino IDE:
 
-### Core ESP8266 Libraries
-- **ESP8266WiFi.h** - WiFi functionality for ESP8266
-- **ESP8266HTTPClient.h** - HTTP client for API communication
-- **WiFiClient.h** - WiFi client support
+### 1. ESPAsyncTCP
+- **Purpose**: Asynchronous TCP library for ESP8266
+- **Installation**: Sketch → Include Library → Manage Libraries → Search "ESPAsyncTCP"
+- **Version**: 1.2.0 or later
+- **Author**: me-no-dev
 
-### Additional Libraries
-- **ESPAsyncTCP.h** - Asynchronous TCP support
-- **ESPAsyncWebServer.h** - Asynchronous web server
-- **EEPROM.h** - Persistent storage
+### 2. ESPAsyncWebServer
+- **Purpose**: Asynchronous web server for ESP8266
+- **Installation**: Sketch → Include Library → Manage Libraries → Search "ESPAsyncWebServer"
+- **Version**: 1.2.3 or later
+- **Author**: me-no-dev
 
-## Installation Instructions
+### 3. EEPROM
+- **Purpose**: EEPROM emulation for data persistence
+- **Installation**: Built-in with ESP8266 core
+- **Version**: Latest stable version
 
-### Arduino IDE Library Manager
+## Installation Steps
 1. Open Arduino IDE
-2. Go to Tools > Manage Libraries
+2. Go to Sketch → Include Library → Manage Libraries
 3. Search for and install:
-   - "ESP8266WiFi" (usually comes with ESP8266 board package)
-   - "ESP8266HTTPClient" (usually comes with ESP8266 board package)
-   - "ESPAsyncTCP" by dvarrel
-   - "ESPAsyncWebServer" by dvarrel
-
-### Manual Installation
-If libraries are not available through Library Manager:
-1. Download ESP8266 board package
-2. Download ESPAsyncTCP and ESPAsyncWebServer from GitHub
-3. Place in Arduino libraries folder
-4. Ensure ESP8266 board is selected in Tools > Board
+   - "ESPAsyncTCP" by me-no-dev
+   - "ESPAsyncWebServer" by me-no-dev
+4. Ensure ESP8266 board package is installed
+5. Select "NodeMCU 1.0 (ESP-12E Module)" board
 
 ## Board Configuration
 - **Board**: NodeMCU 1.0 (ESP-12E Module)
@@ -40,10 +39,9 @@ If libraries are not available through Library Manager:
 ## Dependencies
 - ESP8266 Arduino Core (2.7.4 or later recommended)
 - Arduino IDE 1.8.13 or later
-- ESPAsyncTCP library
-- ESPAsyncWebServer library
 
 ## Notes
-- ESPAsyncTCP and ESPAsyncWebServer provide better web server performance
-- These libraries enable the web dashboard functionality
-- Ensure all libraries are properly installed before uploading 
+- ESPAsyncTCP and ESPAsyncWebServer are third-party libraries
+- These libraries provide better performance than standard libraries
+- EEPROM library is built into ESP8266 core
+- Ensure all libraries are compatible with your ESP8266 board package version 
