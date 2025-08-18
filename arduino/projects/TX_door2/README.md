@@ -1,63 +1,85 @@
-# TX_door2 - Door 2 IR Transmitter Controller
+# TX_door2 - Door 2 Dual IR Transmitter Controller
 
 ## Overview
-Dual IR transmitter controller for Door 2 that provides continuous IR beams for people detection.
+WiFi-enabled dual IR transmitter controller for Door 2 that provides continuous IR beams and connects to Master Hub for monitoring and coordination.
 
 ## Features
-- Dual IR LED control for entry and exit sensors
-- WiFi connectivity to Master Hub for monitoring
-- Real-time status reporting
-- Automatic reconnection on WiFi loss
-
-## Pin Configuration
-- **Entry IR LED**: D1 (GPIO5)
-- **Exit IR LED**: D2 (GPIO4)
+- **Dual IR Transmitters**: Door 2 Entry (D1) and Exit (D2) IR LEDs
+- **WiFi Connectivity**: Connects to Master Hub WiFi network
+- **Status Monitoring**: Sends transmitter status to Master Hub
+- **Continuous Operation**: IR LEDs stay ON for reliable detection
+- **Heartbeat Updates**: Regular status reports every 30 seconds
+- **Automatic Reconnection**: Reconnects to WiFi if connection lost
 
 ## Hardware Requirements
-- NodeMCU ESP8266
-- 2x IR LED modules (IR333C)
-- 200Ω current limiting resistors
-- Power supply (3.3V)
+- **NodeMCU ESP8266** (or compatible ESP8266 board)
+- **2x IR333C LEDs** (IR transmitters)
+- **2x 200Ω Resistors** (for IR LEDs)
+- **Breadboard and jumper wires**
 
-## Library Requirements
-- ESP8266WiFi.h
-- ESP8266HTTPClient.h
-- WiFiClient.h
+## Pin Configuration
+```
+Door 2 Entry TX (D1/GPIO5): IR333C LED + 200Ω resistor
+Door 2 Exit TX (D2/GPIO4):  IR333C LED + 200Ω resistor
+```
 
-## Configuration
+## Wiring Diagram
+```
+3.3V → 200Ω → IR333C LED → D1 (Entry TX)
+3.3V → 200Ω → IR333C LED → D2 (Exit TX)
+GND → IR333C LED (both LEDs)
+```
+
+## Network Configuration
 - **WiFi SSID**: ESP-Counter
 - **WiFi Password**: 12345678
 - **Master Hub IP**: 192.168.4.1
-- **Status Update Interval**: 30 seconds
-- **WiFi Check Interval**: 10 seconds
-
-## Operation
-1. Connects to Master Hub WiFi network
-2. Continuously powers both IR LEDs
-3. Sends status updates to Master Hub
-4. Monitors WiFi connection health
-5. Provides real-time LED status
+- **API Endpoint**: /api/update
 
 ## IR Transmission
-- **Entry LED**: Continuously ON at D1
-- **Exit LED**: Continuously ON at D2
-- **Purpose**: Create IR beams for RX sensors to detect
-- **Pairing**: Works with Door 2 RX sensors (A0 and D3)
+- **Entry LED (D1)**: Continuously ON for Door 2 Entry RX sensor
+- **Exit LED (D2)**: Continuously ON for Door 2 Exit RX sensor
+- **Purpose**: Create IR beams that RX sensors can detect
+- **Pairing**: Works with Door 2 RX sensors (D6 and D5)
 
 ## WiFi Communication
-- **Status Updates**: Every 30 seconds
-- **WiFi Monitoring**: Every 10 seconds
-- **Reconnection**: Automatic on connection loss
-- **Data Sent**: LED states, uptime, free memory
+- **Connection**: Connects to Master Hub WiFi network
+- **Status Updates**: Sends transmitter status every 30 seconds
+- **Data Format**: Includes LED states, uptime, and memory info
+- **Reconnection**: Automatically reconnects if WiFi lost
+
+## API Communication
+Sends POST requests to Master Hub with:
+- `sensor`: door2_tx_status
+- `action`: heartbeat
+- `entry_tx`: ON/OFF status of Entry LED
+- `exit_tx`: ON/OFF status of Exit LED
+- `device`: TX_dual_door2_controller
+- `uptime`: Device uptime in seconds
+- `free_heap`: Available memory
 
 ## Serial Output
-- Startup information and configuration
-- WiFi connection status
-- Periodic status updates
-- LED state monitoring
+- Device initialization and WiFi connection status
+- IR transmitter setup confirmation
+- WiFi connection attempts and results
+- Status updates every 60 seconds
+- WiFi signal strength and memory usage
+
+## Testing
+1. Power on the device
+2. Verify WiFi connection to Master Hub
+3. Check IR LEDs are continuously ON
+4. Verify status updates in Master Hub
+5. Test WiFi reconnection by disconnecting power
+6. Monitor serial output for status information
 
 ## Troubleshooting
-- Verify IR LED connections and resistors
-- Check WiFi credentials and network
-- Monitor serial output for errors
-- Ensure proper power supply voltage 
+- **WiFi Issues**: Check SSID/password, ensure Master Hub is running
+- **IR LEDs**: Verify wiring and 3.3V power supply
+- **No Status Updates**: Check Master Hub IP and WiFi connection
+- **Connection Loss**: Device automatically reconnects to Master Hub
+
+## Dependencies
+- ESP8266WiFi.h
+- ESP8266HTTPClient.h
+- WiFiClient.h 

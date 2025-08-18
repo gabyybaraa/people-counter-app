@@ -9,12 +9,12 @@
 #define Device_ID "RX_door1"    // Change to door1_robust or door2_robust
 #define System_Version "2.0"
 
-// Door 1 pins: Entry=A0 (analog), Exit=D3 (digital)
+// Door 1 pins: Entry=D6 (digital), Exit=D5 (digital)
 // Door 2 pins: Entry=D3 (digital), Exit=A0 (analog)
-const int IR_RECEIVER_ENTRY = A0;    // CHANGE: A0 for Door 1, D3 for Door 2
-const int IR_RECEIVER_EXIT = D3;     // CHANGE: D3 for Door 1, A0 for Door 2
-const int IR_threshold_digital = HIGH;  // For analog sensor
-const bool ENTRY_IS_DIGITAL = false;     // CHANGE: true for Door 1, false for Door 2
+const int IR_RECEIVER_ENTRY = D6;    // Entry sensor pin
+const int IR_RECEIVER_EXIT = D5;     // Exit sensor pin
+const int IR_threshold_digital = HIGH;  // Digital threshold
+const bool ENTRY_IS_DIGITAL = true;     // Both sensors are digital for Door 1
 // === END CONFIGURATION ===
 
 // Master Hub connection
@@ -59,40 +59,21 @@ void handleSimpleDirectionalDetection() {
     return;
   }
   
-  // Read sensors based on door configuration
-  int entryReading, exitReading;
-  bool entryTriggered, exitTriggered;
-  
-  if (ENTRY_IS_DIGITAL) {
-    // Door 1: Entry=A0 (analog), Exit=D3 (digital)
-    entryReading = digitalRead(IR_RECEIVER_ENTRY);
-    exitReading = digitalRead(IR_RECEIVER_EXIT);
-    entryTriggered = (entryReading == IR_threshold_digital);
-    exitTriggered = (exitReading == IR_threshold_digital);
-  } else {
-    // Door 2: Entry=D3 (digital), Exit=A0 (analog)
-    entryReading = digitalRead(IR_RECEIVER_ENTRY);
-    exitReading = digitalRead(IR_RECEIVER_EXIT);
-    entryTriggered = (entryReading == IR_threshold_digital);
-    exitTriggered = (exitReading == IR_threshold_digital);
-  }
+  // Read sensors - both are digital for Door 1
+  int entryReading = digitalRead(IR_RECEIVER_ENTRY);
+  int exitReading = digitalRead(IR_RECEIVER_EXIT);
+  bool entryTriggered = (entryReading == IR_threshold_digital);
+  bool exitTriggered = (exitReading == IR_threshold_digital);
   
   // Simple directional logic: only count single sensor triggers
   if (entryTriggered && !exitTriggered && !entry_last_state) {
     delay(DEBOUNCE_TIME);
     
     // Re-check after debounce
-    if (ENTRY_IS_DIGITAL) {
-      entryReading = digitalRead(IR_RECEIVER_ENTRY);
-      exitReading = digitalRead(IR_RECEIVER_EXIT);
-      entryTriggered = (entryReading == IR_threshold_digital);
-      exitTriggered = (exitReading == IR_threshold_digital);
-    } else {
-      entryReading = digitalRead(IR_RECEIVER_ENTRY);
-      exitReading = digitalRead(IR_RECEIVER_EXIT);
-      entryTriggered = (entryReading == IR_threshold_digital);
-      exitTriggered = (exitReading == IR_threshold_digital);
-    }
+    entryReading = digitalRead(IR_RECEIVER_ENTRY);
+    exitReading = digitalRead(IR_RECEIVER_EXIT);
+    entryTriggered = (entryReading == IR_threshold_digital);
+    exitTriggered = (exitReading == IR_threshold_digital);
     
     if (entryTriggered && !exitTriggered) {
       entry_count++;
@@ -106,8 +87,8 @@ void handleSimpleDirectionalDetection() {
                            (minutes < 10 ? "0" : "") + String(minutes) + ":" +
                            (secs < 10 ? "0" : "") + String(secs);
       
-      Serial.printf("ENTRY! Count: %d Time: %s\n", 
-                    entry_count, entry_last_activity.c_str());
+      Serial.printf("ENTRY! Count: %d (Reading: %d) Time: %s\n", 
+                    entry_count, entryReading, entry_last_activity.c_str());
       
       sendEventToMaster("door1_entry", "entry", entryReading);
       last_detection = currentTime;
@@ -118,17 +99,10 @@ void handleSimpleDirectionalDetection() {
     delay(DEBOUNCE_TIME);
     
     // Re-check after debounce
-    if (ENTRY_IS_DIGITAL) {
-      entryReading = digitalRead(IR_RECEIVER_ENTRY);
-      exitReading = digitalRead(IR_RECEIVER_EXIT);
-      entryTriggered = (entryReading == IR_threshold_digital);
-      exitTriggered = (exitReading == IR_threshold_digital);
-    } else {
-      entryReading = digitalRead(IR_RECEIVER_ENTRY);
-      exitReading = digitalRead(IR_RECEIVER_EXIT);
-      entryTriggered = (entryReading == IR_threshold_digital);
-      exitTriggered = (exitReading == IR_threshold_digital);
-    }
+    entryReading = digitalRead(IR_RECEIVER_ENTRY);
+    exitReading = digitalRead(IR_RECEIVER_EXIT);
+    entryTriggered = (entryReading == IR_threshold_digital);
+    exitTriggered = (exitReading == IR_threshold_digital);
     
     if (exitTriggered && !entryTriggered) {
       exit_count++;
@@ -142,17 +116,18 @@ void handleSimpleDirectionalDetection() {
                           (minutes < 10 ? "0" : "") + String(minutes) + ":" +
                           (secs < 10 ? "0" : "") + String(secs);
       
-      Serial.printf("EXIT! Count: %d Time: %s\n", 
-                    exit_count, exit_last_activity.c_str());
+      Serial.printf("EXIT! Count: %d (Reading: %d) Time: %s\n", 
+                    exit_count, exitReading, exit_last_activity.c_str());
       
       sendEventToMaster("door1_exit", "exit", exitReading);
       last_detection = currentTime;
     }
   }
   
-  // Log ambiguous detections for debugging
+  // Log ambiguous detections
   if (entryTriggered && exitTriggered && (!entry_last_state || !exit_last_state)) {
-    Serial.println("Both sensors triggered simultaneously - ignoring to prevent false positive");
+    Serial.printf("Both sensors triggered - ignoring (Entry: %d, Exit: %d)\n", 
+                  entryReading, exitReading);
   }
   
   // Update states
@@ -163,7 +138,7 @@ void handleSimpleDirectionalDetection() {
 void connectToMaster() {
   unsigned long currentTime = millis();
   
-  // Prevent rapid reconnection attempts
+  // Don't try to connect too frequently
   if (currentTime - lastConnectionAttempt < RECONNECTION_INTERVAL) {
     return;
   }
@@ -175,12 +150,12 @@ void connectToMaster() {
   
   // Disconnect first to ensure clean connection
   WiFi.disconnect();
-  delay(1000);
+  delay(100);
   
   WiFi.begin(wifi_ssid, wifi_password);
   
   int attempts = 0;
-  while (WiFi.status() != WL_CONNECTED && attempts < 20) {
+  while (WiFi.status() != WL_CONNECTED && attempts < 20) {  // Reduced attempts for faster retry
     delay(500);
     Serial.print(".");
     attempts++;
@@ -217,13 +192,14 @@ void sendEventToMaster(String sensor, String action, int irValue) {
   
   http.begin(client, String("http://") + master_server_ip + "/api/update");
   http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+  http.setTimeout(5000);  // 5 second timeout
   
-  String beamStatusStr = "clear";  // Always clear after detection
+  String beamStatusStr = "clear";
   String activityTime = "";
   
-  if (sensor == "door1_entry") {
+  if (sensor.indexOf("entry") >= 0) {
     activityTime = entry_last_activity;
-  } else if (sensor == "door1_exit") {
+  } else if (sensor.indexOf("exit") >= 0) {
     activityTime = exit_last_activity;
   }
   
@@ -262,9 +238,12 @@ void sendHeartbeatToMaster() {
   // Send entry heartbeat
   http.begin(client, String("http://") + master_server_ip + "/api/update");
   http.addHeader("Content-Type", "application/x-www-form-urlencoded");
+  http.setTimeout(5000);
   
-  int entryIR = ENTRY_IS_DIGITAL ? digitalRead(IR_RECEIVER_ENTRY) : analogRead(IR_RECEIVER_ENTRY);
-  String entryStatus = (entryIR > 512) ? "broken" : "clear";  // Threshold for analog
+  int entryIR = digitalRead(IR_RECEIVER_ENTRY);
+  int exitIR = digitalRead(IR_RECEIVER_EXIT);
+  String entryStatus = (entryIR == IR_threshold_digital) ? "broken" : "clear";
+  String exitStatus = (exitIR == IR_threshold_digital) ? "broken" : "clear";
   
   String postData1 = "sensor=door1_entry&action=heartbeat&ir_value=" + String(entryIR) + 
                     "&beam_status=" + entryStatus + "&activity_time=" + entry_last_activity + 
@@ -273,8 +252,8 @@ void sendHeartbeatToMaster() {
   int httpResponseCode1 = http.POST(postData1);
   
   if (httpResponseCode1 == 200) {
-    Serial.printf("Entry heartbeat OK - %s: %d, Status: %s\n", 
-                  ENTRY_IS_DIGITAL ? "D6" : "D5", entryIR, entryStatus.c_str());
+    Serial.printf("Entry heartbeat OK - D6: %d, Status: %s\n", 
+                  entryIR, entryStatus.c_str());
   } else {
     Serial.printf("Entry heartbeat failed: %d\n", httpResponseCode1);
   }
@@ -282,12 +261,10 @@ void sendHeartbeatToMaster() {
   http.end();
   
   // Send exit heartbeat
-  delay(100);
+  delay(200);
   http.begin(client, String("http://") + master_server_ip + "/api/update");
   http.addHeader("Content-Type", "application/x-www-form-urlencoded");
-  
-  int exitIR = ENTRY_IS_DIGITAL ? analogRead(IR_RECEIVER_EXIT) : digitalRead(IR_RECEIVER_EXIT);
-  String exitStatus = (exitIR > 512) ? "broken" : "clear";  // Threshold for analog
+  http.setTimeout(5000);
   
   String postData2 = "sensor=door1_exit&action=heartbeat&ir_value=" + String(exitIR) + 
                     "&beam_status=" + exitStatus + "&activity_time=" + exit_last_activity + 
@@ -296,19 +273,21 @@ void sendHeartbeatToMaster() {
   int httpResponseCode2 = http.POST(postData2);
   
   if (httpResponseCode2 == 200) {
-    Serial.printf("Exit heartbeat OK - %s: %d, Status: %s\n", 
-                  ENTRY_IS_DIGITAL ? "D5" : "D6", exitIR, exitStatus.c_str());
+    Serial.printf("Exit heartbeat OK - D5: %d, Status: %s\n", 
+                  exitIR, exitStatus.c_str());
   } else {
     Serial.printf("Exit heartbeat failed: %d\n", httpResponseCode2);
   }
   
   http.end();
+  
+  lastHeartbeat = millis();
 }
 
 void monitorWiFi() {
   unsigned long currentTime = millis();
   
-  if (currentTime - lastWiFiCheck < 5000) return;
+  if (currentTime - lastWiFiCheck < 5000) return;  // Check every 5 seconds
   lastWiFiCheck = currentTime;
   
   if (WiFi.status() != WL_CONNECTED) {
@@ -321,53 +300,41 @@ void monitorWiFi() {
 
 void setup() {
   Serial.begin(9600);
-  delay(3000);
+  delay(1000);
   
   startupTime = millis();
   
-  Serial.println("\nROBUST DOOR CONTROLLER - IR RECEIVER SYSTEM");
-  Serial.println("=============================================");
+  Serial.println("\nROBUST DOOR CONTROLLER");
+  Serial.println("==============================");
   Serial.printf("Device: %s\n", Device_ID);
-  Serial.printf("Version: %s\n", System_Version);
-  Serial.printf("Features:\n");
-  Serial.printf("- Enhanced connectivity with retry logic\n");
-  Serial.printf("- Improved error handling and recovery\n");
-  Serial.printf("- Better startup sequence with sensor testing\n");
-  Serial.printf("- Optimized timing for reliable operation\n");
-  Serial.printf("- Comprehensive logging and debugging\n");
-  Serial.printf("Pin Configuration:\n");
-  Serial.printf("- Entry: %s (%s)\n", 
-                ENTRY_IS_DIGITAL ? "D6" : "A0", 
-                ENTRY_IS_DIGITAL ? "digital" : "analog");
-  Serial.printf("- Exit: %s (%s)\n", 
-                ENTRY_IS_DIGITAL ? "D3" : "A0", 
-                ENTRY_IS_DIGITAL ? "digital" : "analog");
-  Serial.printf("Timing:\n");
-  Serial.printf("- Startup delay: %lu ms\n", STARTUP_DELAY);
-  Serial.printf("- Detection cooldown: %lu ms\n", DETECTION_COOLDOWN);
-  Serial.printf("- Heartbeat interval: %lu ms\n", HEARTBEAT_INTERVAL);
-  Serial.println("=============================================");
+  Serial.printf("System: %s\n", System_Version);
+  Serial.printf("Pin Config: Entry=D6(digital), Exit=D5(digital)\n");
+  Serial.printf("Startup delay: %lu ms\n", STARTUP_DELAY);
+  Serial.printf("Heartbeat interval: %lu ms\n", HEARTBEAT_INTERVAL);
+  Serial.println("==============================");
   
-  // Setup pins
-  if (ENTRY_IS_DIGITAL) {
-    pinMode(IR_RECEIVER_ENTRY, INPUT);
-  }
-  pinMode(IR_RECEIVER_EXIT, INPUT);
+  // Setup pins - both are digital for Door 1
+  pinMode(IR_RECEIVER_ENTRY, INPUT);      // D6 - Entry sensor
+  pinMode(IR_RECEIVER_EXIT, INPUT);       // D5 - Exit sensor
+  
+  Serial.printf("Startup delay: %lu seconds (waiting for Master Hub)...\n", STARTUP_DELAY/1000);
   
   // Test sensors during startup delay
-  Serial.println("Initial sensor states:");
-  for (int i = 0; i < 3; i++) {
-    int entryIR = ENTRY_IS_DIGITAL ? digitalRead(IR_RECEIVER_ENTRY) : analogRead(IR_RECEIVER_ENTRY);
-    int exitIR = ENTRY_IS_DIGITAL ? analogRead(IR_RECEIVER_EXIT) : digitalRead(IR_RECEIVER_EXIT);
-    Serial.printf("  Entry: %s | Exit: %s\n", 
-                  entryIR > 512 ? "DETECTED" : "CLEAR",
-                  exitIR > 512 ? "DETECTED" : "CLEAR");
+  for (int i = 0; i < 5; i++) {
+    int entryIR = digitalRead(IR_RECEIVER_ENTRY);
+    int exitIR = digitalRead(IR_RECEIVER_EXIT);
+    Serial.printf("Sensor test %d - Entry D6: %d | Exit D5: %d\n", i+1, entryIR, exitIR);
     delay(1000);
   }
   
   // Initialize states
-  entry_last_state = (ENTRY_IS_DIGITAL ? digitalRead(IR_RECEIVER_ENTRY) : analogRead(IR_RECEIVER_ENTRY)) > 512;
-  exit_last_state = (ENTRY_IS_DIGITAL ? analogRead(IR_RECEIVER_EXIT) : digitalRead(IR_RECEIVER_EXIT)) > 512;
+  entry_last_state = (digitalRead(IR_RECEIVER_ENTRY) == IR_threshold_digital);
+  exit_last_state = (digitalRead(IR_RECEIVER_EXIT) == IR_threshold_digital);
+  
+  Serial.println("Initial sensor states:");
+  Serial.printf("  Entry D6: %s | Exit D5: %s\n", 
+                entry_last_state ? "DETECTED" : "CLEAR",
+                exit_last_state ? "DETECTED" : "CLEAR");
   
   Serial.println("Starting connection process...");
   connectToMaster();
@@ -379,32 +346,32 @@ void setup() {
 void loop() {
   unsigned long currentTime = millis();
   
-  // Handle directional detection
-  handleSimpleDirectionalDetection();
-  
-  // WiFi monitoring and reconnection
-  monitorWiFi();
-  
-  // Send heartbeat when connected
-  if (wifiConnected && (currentTime - lastHeartbeat > HEARTBEAT_INTERVAL)) {
-    sendHeartbeatToMaster();
-    lastHeartbeat = currentTime;
+  // Handle detection (only after startup delay)
+  if (currentTime - startupTime >= STARTUP_DELAY) {
+    handleSimpleDirectionalDetection();
   }
   
-  // Status updates every 60 seconds
+  // WiFi monitoring
+  monitorWiFi();
+  
+  // Regular heartbeat
+  if (wifiConnected && (currentTime - lastHeartbeat > HEARTBEAT_INTERVAL)) {
+    sendHeartbeatToMaster();
+  }
+  
+  // Status updates
   static unsigned long lastStatus = 0;
-  if (currentTime - lastStatus > 60000) {
-    int entryIR = ENTRY_IS_DIGITAL ? digitalRead(IR_RECEIVER_ENTRY) : analogRead(IR_RECEIVER_ENTRY);
-    int exitIR = ENTRY_IS_DIGITAL ? analogRead(IR_RECEIVER_EXIT) : digitalRead(IR_RECEIVER_EXIT);
+  if (currentTime - lastStatus > 30000) {
+    int entryIR = digitalRead(IR_RECEIVER_ENTRY);
+    int exitIR = digitalRead(IR_RECEIVER_EXIT);
     
-    Serial.printf("Status - Entry:%d Exit:%d | WiFi:%s | Readings: %d,%d | Uptime: %lu min\n", 
+    Serial.printf("Status - Entry:%d Exit:%d | WiFi:%s | D6:%d D5:%d | Uptime: %lu min\n", 
                   entry_count, exit_count, 
                   wifiConnected ? "OK" : "FAIL", 
                   entryIR, exitIR,
                   currentTime/1000/60);
-    
     lastStatus = currentTime;
   }
   
-  delay(100);  // Standard loop delay
+  delay(100);
 } 
