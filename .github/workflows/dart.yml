@@ -12,7 +12,6 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
-
       
       - uses: subosito/flutter-action@v2
         with:
@@ -24,24 +23,98 @@ jobs:
       - run: pod repo update
         working-directory: ios
 
-      
+      # Clean previous builds to avoid conflicts
+      - name: Clean previous builds
+        run: |
+          flutter clean
+          cd ios
+          rm -rf build/ Payload/ Runner.app/
+          cd ..
+
       - run: flutter build ios --release --no-codesign
 
+      # Debug: Check what was actually built
+      - name: Debug build output
+        run: |
+          echo "=== Build directory contents ==="
+          ls -la build/
+          echo "=== iOS build contents ==="
+          ls -la build/ios/
+          echo "=== iPhoneOS build contents ==="
+          ls -la build/ios/iphoneos/
+          echo "=== Looking for Runner.app recursively ==="
+          find build/ -name "Runner.app" -type d
+        working-directory: .
+
+      # Find the correct path for Runner.app
+      - name: Find Runner.app location
+        run: |
+          RUNNER_PATH=$(find build/ -name "Runner.app" -type d | head -1)
+          if [ -n "$RUNNER_PATH" ]; then
+            echo "Found Runner.app at: $RUNNER_PATH"
+            echo "RUNNER_PATH=$RUNNER_PATH" >> $GITHUB_ENV
+          else
+            echo "ERROR: Runner.app not found anywhere!"
+            exit 1
+          fi
+        working-directory: .
+
+      # Clean and prepare Payload in the correct location
       - name: Prepare Payload
-        run: 
-          mkdir Payload
+        run: |
+          # Get the directory containing Runner.app
+          RUNNER_DIR=$(dirname "$RUNNER_PATH")
+          echo "Working in directory: $RUNNER_DIR"
+          echo "RUNNER_DIR=$RUNNER_DIR" >> $GITHUB_ENV
+          
+          # Clean up any existing Payload
+          if [ -d "Payload" ]; then
+            rm -rf Payload/
+          fi
+          
+          # Create Payload directory
+          mkdir -p Payload
+          
+          # Move Runner.app to Payload
           mv Runner.app Payload/
-        working-directory: build/ios/iphoneos
+          echo "Payload prepared successfully in $RUNNER_DIR"
+          
+          # List contents to verify
+          ls -la Payload/
+        working-directory: ${{ env.RUNNER_PATH }}/..
 
       - name: Zip output
-        run: zip -qq -r -9 FlutterIpaExport.ipa Payload
-        working-directory: build/ios/iphoneos
+        run: |
+          # Create IPA in the same directory as Payload
+          zip -qq -r -9 FlutterIpaExport.ipa Payload
+          echo "IPA created successfully at: $PWD/FlutterIpaExport.ipa"
+          
+          # Store the full path for upload
+          echo "IPA_PATH=$PWD/FlutterIpaExport.ipa" >> $GITHUB_ENV
+          
+          # Verify the file exists
+          ls -la FlutterIpaExport.ipa
+        working-directory: ${{ env.RUNNER_DIR }}
+
+      # Create a proper release tag
+      - name: Create Release Tag
+        run: |
+          # Create a timestamp-based tag
+          TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
+          RELEASE_TAG="v1.0.0-$TIMESTAMP"
+          echo "Creating release tag: $RELEASE_TAG"
+          echo "RELEASE_TAG=$RELEASE_TAG" >> $GITHUB_ENV
+          
+          # Create and push the tag
+          git tag $RELEASE_TAG
+          git push origin $RELEASE_TAG
+        working-directory: .
 
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: build/ios/iphoneos/FlutterIpaExport.ipa
-          tag: ${{ github.sha }}
+          file: ${{ env.IPA_PATH }}
+          tag: ${{ env.RELEASE_TAG }}
           overwrite: true
-          body: "This is first release" 
+          body: "iOS Build - ${{ env.RELEASE_TAG }} - Built on ${{ github.event.head_commit.timestamp || 'unknown' }}"

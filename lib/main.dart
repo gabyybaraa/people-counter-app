@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
 import 'network_service.dart';
-import 'ui_widgets.dart';
 
 // HTTP Override to allow local network connections
 class MyHttpOverrides extends HttpOverrides {
@@ -14,6 +13,26 @@ class MyHttpOverrides extends HttpOverrides {
       ..badCertificateCallback =
           (X509Certificate cert, String host, int port) => true;
   }
+}
+
+// Reusable Card Widget (moved from ui_widgets.dart)
+Widget buildCard({required Widget child, EdgeInsets? padding}) {
+  return Container(
+    width: double.infinity,
+    padding: padding ?? const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 10,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: child,
+  );
 }
 
 void main() {
@@ -71,6 +90,22 @@ class _PeopleCounterHomePageState extends State<PeopleCounterHomePage> {
   String lastExitTimeStr = 'Never';
   String currentDeviceTime = '--';
 
+  // NEW: Multi-door support
+  Map<String, int> doorCounts = {
+    'door1': {'in': 0, 'out': 0},
+    'door2': {'in': 0, 'out': 0},
+  };
+  
+  Map<String, String> doorLastEntryTimes = {
+    'door1': 'Never',
+    'door2': 'Never',
+  };
+  
+  Map<String, String> doorLastExitTimes = {
+    'door1': 'Never',
+    'door2': 'Never',
+  };
+
   // Controllers
   final TextEditingController ipController = TextEditingController();
   Timer? reconnectTimer;
@@ -85,7 +120,7 @@ class _PeopleCounterHomePageState extends State<PeopleCounterHomePage> {
     // HTTP Polling every 2 seconds when connected
     pollingTimer = Timer.periodic(const Duration(seconds: 2), (timer) {
       if (isConnected) {
-        _fetchCurrentCount();
+        _fetchAllDoorData(); // Now fetches both doors
       }
     });
 
@@ -192,6 +227,7 @@ class _PeopleCounterHomePageState extends State<PeopleCounterHomePage> {
             totalEntered += diff;
             // Update last entry time with current local time
             lastEntryTimeStr = currentTime;
+            doorLastEntryTimes['door1'] = currentTime; // Update Door 1
             for (int i = 0; i < diff; i++) {
               countHistory.add(CountEvent('Entry', DateTime.now(), currentCount));
             }
@@ -200,20 +236,27 @@ class _PeopleCounterHomePageState extends State<PeopleCounterHomePage> {
             totalExited += diff;
             // Update last exit time with current local time
             lastExitTimeStr = currentTime;
+            doorLastExitTimes['door1'] = currentTime; // Update Door 1
             for (int i = 0; i < diff; i++) {
               countHistory.add(CountEvent('Exit', DateTime.now(), currentCount));
             }
           }
           
+          // Update Door 1 counts
+          doorCounts['door1']['in'] = totalEntered;
+          doorCounts['door1']['out'] = totalExited;
+          
           // Only use device timestamps if they're not set yet and no changes detected
           if (lastEntryTimeStr == 'Never' && data.containsKey('last_entry') && data['last_entry'] != 'Never') {
             // Device has a last entry but we don't - this means it happened before app started
             lastEntryTimeStr = 'Before app start';
+            doorLastEntryTimes['door1'] = 'Before app start';
           }
           
           if (lastExitTimeStr == 'Never' && data.containsKey('last_exit') && data['last_exit'] != 'Never') {
             // Device has a last exit but we don't - this means it happened before app started  
             lastExitTimeStr = 'Before app start';
+            doorLastExitTimes['door1'] = 'Before app start';
           }
         });
       }
@@ -227,6 +270,42 @@ class _PeopleCounterHomePageState extends State<PeopleCounterHomePage> {
         _showSnackBar('Connection lost', Colors.red);
       }
     }
+  }
+
+  // NEW: Fetch Door 2 data
+  Future<void> _fetchDoor2Data() async {
+    try {
+      final response = await http.get(
+        Uri.parse('http://$deviceIP/api/door2'),
+        headers: {'Content-Type': 'application/json'},
+      ).timeout(const Duration(seconds: 5));
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> data = json.decode(response.body);
+        setState(() {
+          // Update Door 2 counts
+          doorCounts['door2']['in'] = data['in_count'] ?? 0;
+          doorCounts['door2']['out'] = data['out_count'] ?? 0;
+          
+          // Update Door 2 timestamps
+          if (data.containsKey('last_entry') && data['last_entry'] != 'Never') {
+            doorLastEntryTimes['door2'] = _formatTime(DateTime.parse(data['last_entry']));
+          }
+          if (data.containsKey('last_exit') && data['last_exit'] != 'Never') {
+            doorLastExitTimes['door2'] = _formatTime(DateTime.parse(data['last_exit']));
+          }
+        });
+      }
+    } catch (e) {
+      print('Error fetching Door 2 data: $e');
+      // Door 2 might not be available, that's okay
+    }
+  }
+
+  // NEW: Fetch all door data
+  Future<void> _fetchAllDoorData() async {
+    await _fetchCurrentCount();
+    await _fetchDoor2Data();
   }
 
   Future<void> _fetchDeviceStatus() async {
@@ -265,6 +344,12 @@ class _PeopleCounterHomePageState extends State<PeopleCounterHomePage> {
           lastExitTimeStr = 'Never';
           lastUpdateTime = _formatTime(DateTime.now());
           currentDeviceTime = lastUpdateTime;
+          
+          // Reset Door 1 data
+          doorCounts['door1']['in'] = 0;
+          doorCounts['door1']['out'] = 0;
+          doorLastEntryTimes['door1'] = 'Never';
+          doorLastExitTimes['door1'] = 'Never';
         });
         _showSnackBar('Counter reset successfully!', Colors.green);
       } else {
@@ -272,6 +357,26 @@ class _PeopleCounterHomePageState extends State<PeopleCounterHomePage> {
       }
     } catch (e) {
       _showSnackBar('Error resetting counter: ${e.toString()}', Colors.red);
+    }
+  }
+
+  // NEW: Reset all doors
+  Future<void> _resetAllCounters() async {
+    try {
+      // Reset Door 1
+      await _resetCounter();
+      
+      // Reset Door 2
+      setState(() {
+        doorCounts['door2']['in'] = 0;
+        doorCounts['door2']['out'] = 0;
+        doorLastEntryTimes['door2'] = 'Never';
+        doorLastExitTimes['door2'] = 'Never';
+      });
+      
+      _showSnackBar('All doors reset successfully!', Colors.green);
+    } catch (e) {
+      _showSnackBar('Error resetting all counters: ${e.toString()}', Colors.red);
     }
   }
 
@@ -551,6 +656,131 @@ class _PeopleCounterHomePageState extends State<PeopleCounterHomePage> {
 
               const SizedBox(height: 24),
 
+              // NEW: Door 2 (Secondary) Status Card
+              buildCard(
+                child: Column(
+                  children: [
+                    // Header Section
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: Colors.orange,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: const Icon(Icons.door_front_door, color: Colors.white, size: 20),
+                        ),
+                        const SizedBox(width: 12),
+                        Text(
+                          'Door 2 (Secondary)',
+                          style: TextStyle(
+                            color: Colors.orange[800],
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 16),
+                    
+                    // Two Sub-Cards Row
+                    Row(
+                      children: [
+                        // Left Sub-Card (Entry)
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey[300]!),
+                            ),
+                            child: Column(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.green,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(Icons.login, color: Colors.white, size: 20),
+                                ),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'Last Entry',
+                                  style: TextStyle(
+                                    color: Colors.green,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  doorLastEntryTimes['door2'] ?? 'Never',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        
+                        const SizedBox(width: 12),
+                        
+                        // Right Sub-Card (Exit)
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey[300]!),
+                            ),
+                            child: Column(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(Icons.logout, color: Colors.white, size: 20),
+                                ),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'Last Exit',
+                                  style: TextStyle(
+                                    color: Colors.red,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  doorLastExitTimes['door2'] ?? 'Never',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 24),
+
               // Current Count Card
               buildCard(
                 child: Column(
@@ -587,30 +817,216 @@ class _PeopleCounterHomePageState extends State<PeopleCounterHomePage> {
 
               const SizedBox(height: 24),
 
+              // NEW: Device Status Header
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Icon(Icons.wifi, color: isConnected ? Colors.green : Colors.red, size: 20),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Device Status',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // NEW: Multi-Door Control Cards
+              Row(
+                children: [
+                  // Door 1 Control Card (Blue)
+                  Expanded(
+                    child: buildCard(
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(Icons.door_front_door, color: Colors.white, size: 20),
+                              ),
+                              const SizedBox(width: 12),
+                              const Text(
+                                'Door 1',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      '${doorCounts['door1']?['in'] ?? 0} In',
+                                      style: const TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.check_circle,
+                                      color: isConnected ? Colors.green : Colors.grey,
+                                      size: 20,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      '${doorCounts['door1']?['out'] ?? 0} Out',
+                                      style: const TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.check_circle,
+                                      color: isConnected ? Colors.green : Colors.grey,
+                                      size: 20,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  
+                  const SizedBox(width: 16),
+                  
+                  // Door 2 Control Card (Yellow)
+                  Expanded(
+                    child: buildCard(
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.orange,
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(Icons.door_front_door, color: Colors.white, size: 20),
+                              ),
+                              const SizedBox(width: 12),
+                              const Text(
+                                'Door 2',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      '${doorCounts['door2']?['in'] ?? 0} In',
+                                      style: const TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.check_circle,
+                                      color: isConnected ? Colors.green : Colors.grey,
+                                      size: 20,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              Expanded(
+                                child: Column(
+                                  children: [
+                                    Text(
+                                      '${doorCounts['door2']?['out'] ?? 0} Out',
+                                      style: const TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.check_circle,
+                                      color: isConnected ? Colors.green : Colors.grey,
+                                      size: 20,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 32),
+
+              // NEW: Activity & Timing Header
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                child: const Row(
+                  children: [
+                    Icon(
+                      Icons.access_time,
+                      color: Colors.black54,
+                      size: 24,
+                    ),
+                    SizedBox(width: 12),
+                    Text(
+                      'Activity & Timing',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
               // Activity & Timing Card
               buildCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Row(
-                      children: [
-                        Icon(
-                          Icons.access_time,
-                          color: Colors.black54,
-                          size: 24,
-                        ),
-                        SizedBox(width: 12),
-                        Text(
-                          'Activity & Timing',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
                     
                     // Current Time
                     Container(
@@ -898,6 +1314,22 @@ class _PeopleCounterHomePageState extends State<PeopleCounterHomePage> {
 
               const SizedBox(height: 32),
 
+              // NEW: System Control Actions Header
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                child: const Text(
+                  'System Control Actions',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
+                  ),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
               // Control Buttons
               Row(
                 children: [
@@ -918,7 +1350,7 @@ class _PeopleCounterHomePageState extends State<PeopleCounterHomePage> {
                         ],
                       ),
                       child: ElevatedButton.icon(
-                        onPressed: isConnected ? _resetCounter : null,
+                        onPressed: isConnected ? _resetAllCounters : null, // Updated to reset all doors
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.transparent,
                           shadowColor: Colors.transparent,
@@ -959,7 +1391,7 @@ class _PeopleCounterHomePageState extends State<PeopleCounterHomePage> {
                         ],
                       ),
                       child: ElevatedButton.icon(
-                        onPressed: isConnected ? _fetchCurrentCount : null,
+                        onPressed: isConnected ? _fetchAllDoorData : null, // Updated to fetch all doors
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.transparent,
                           shadowColor: Colors.transparent,
