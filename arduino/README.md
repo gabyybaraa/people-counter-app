@@ -19,7 +19,8 @@ This directory contains all Arduino projects for the people counting system, inc
 - NodeMCU ESP8266 development boards
 - IR LED modules (IR333C)
 - IR receiver sensors (PT204-6B phototransistors)
-- 200Ω current limiting resistors
+- 200Ω current limiting resistors (for IR LEDs)
+- 10kΩ voltage division resistors (for IR receivers)
 - Power supply (3.3V)
 
 ### Pin Assignments

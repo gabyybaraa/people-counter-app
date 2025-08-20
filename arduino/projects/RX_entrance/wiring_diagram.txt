@@ -1,0 +1,55 @@
+# Wiring Diagram for RX_door1 - Door 1 IR Receiver Controller
+
+## Component List
+- NodeMCU ESP8266 (or compatible ESP8266 board)
+- 2x PT204-6B Phototransistors (IR receivers)
+- 2x 10kΩ Resistors
+- Breadboard and jumper wires
+- 3.3V power supply
+
+## Pin Assignments
+- **Entry Sensor**: D6 (GPIO12)
+- **Exit Sensor**: D5 (GPIO14)
+- **Power**: 3.3V
+- **Ground**: GND
+
+## Detailed Wiring
+
+### Entry Sensor (D6)
+```
+3.3V → 10kΩ Resistor → PT204-6B Phototransistor → D6 (GPIO12)
+GND → PT204-6B Phototransistor
+```
+
+### Exit Sensor (D5)
+```
+3.3V → 10kΩ Resistor → PT204-6B Phototransistor → D5 (GPIO14)
+GND → PT204-6B Phototransistor
+```
+
+## Circuit Diagram
+```
+                    Entry Sensor (D6)
+3.3V ──[10kΩ]───[PT204-6B]─── D6 (GPIO12)
+                    │
+                   GND
+
+                    Exit Sensor (D5)
+3.3V ──[10kΩ]───[PT204-6B]─── D5 (GPIO14)
+                    │
+                   GND
+```
+
+## Connection Details
+- **Power Supply**: 3.3V from NodeMCU
+- **Resistors**: 10kΩ for voltage division
+- **Sensors**: PT204-6B phototransistors for IR detection
+- **Input Mode**: Both pins configured as INPUT
+- **Detection**: Digital HIGH when IR beam is broken
+
+## Notes
+- Both sensors use digital input mode
+- 10kΩ resistors provide proper voltage division
+- Sensors detect when IR beams are broken
+- D6 and D5 are both digital pins (not analog)
+- GND connections are shared between both sensors 
