@@ -4,7 +4,6 @@ import 'dart:convert';
 import 'dart:async';
 import 'dart:io';
 import 'network_service.dart';
-import 'ui_widgets.dart';
 
 // HTTP Override to allow local network connections
 class MyHttpOverrides extends HttpOverrides {
@@ -14,6 +13,26 @@ class MyHttpOverrides extends HttpOverrides {
       ..badCertificateCallback =
           (X509Certificate cert, String host, int port) => true;
   }
+}
+
+// Reusable Card Widget (moved from ui_widgets.dart)
+Widget buildCard({required Widget child, EdgeInsets? padding}) {
+  return Container(
+    width: double.infinity,
+    padding: padding ?? const EdgeInsets.all(20),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      boxShadow: [
+        BoxShadow(
+          color: Colors.black.withOpacity(0.05),
+          blurRadius: 10,
+          offset: const Offset(0, 2),
+        ),
+      ],
+    ),
+    child: child,
+  );
 }
 
 void main() {
