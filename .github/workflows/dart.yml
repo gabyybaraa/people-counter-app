@@ -23,7 +23,7 @@ jobs:
       - run: pod repo update
         working-directory: ios
 
-     
+    
       - name: Clean previous builds
         run: |
           flutter clean
@@ -33,16 +33,28 @@ jobs:
 
       - run: flutter build ios --release --no-codesign
 
-      
-      - name: Clean build artifacts
+   
+      - name: Force clean build artifacts
         run: |
-          rm -rf Payload/ Runner.app/
+          # Remove Payload directory if it exists
+          if [ -d "Payload" ]; then
+            rm -rf Payload/
+          fi
+          # Remove Runner.app if it exists
+          if [ -d "Runner.app" ]; then
+            rm -rf Runner.app/
+          fi
+          # Ensure clean state
+          echo "Build directory cleaned successfully"
         working-directory: build/ios/iphoneos
 
       - name: Prepare Payload
-        run: 
-          mkdir Payload
+        run: |
+          # Create Payload directory
+          mkdir -p Payload
+          # Move Runner.app to Payload
           mv Runner.app Payload/
+          echo "Payload prepared successfully"
         working-directory: build/ios/iphoneos
 
       - name: Zip output
