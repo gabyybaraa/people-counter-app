@@ -23,7 +23,7 @@ jobs:
       - run: pod repo update
         working-directory: ios
 
-      
+      # Clean previous builds to avoid conflicts
       - name: Clean previous builds
         run: |
           flutter clean
@@ -46,7 +46,7 @@ jobs:
           find build/ -name "Runner.app" -type d
         working-directory: .
 
-     
+   
       - name: Find Runner.app location
         run: |
           RUNNER_PATH=$(find build/ -name "Runner.app" -type d | head -1)
@@ -59,7 +59,7 @@ jobs:
           fi
         working-directory: .
 
-     
+    
       - name: Prepare Payload
         run: |
           # Get the directory containing Runner.app
@@ -91,11 +91,25 @@ jobs:
           echo "IPA created successfully"
         working-directory: .
 
+    
+      - name: Create Release Tag
+        run: |
+          # Create a timestamp-based tag
+          TIMESTAMP=$(date +"%Y%m%d-%H%M%S")
+          RELEASE_TAG="v1.0.0-$TIMESTAMP"
+          echo "Creating release tag: $RELEASE_TAG"
+          echo "RELEASE_TAG=$RELEASE_TAG" >> $GITHUB_ENV
+          
+          # Create and push the tag
+          git tag $RELEASE_TAG
+          git push origin $RELEASE_TAG
+        working-directory: .
+
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           file: ${{ env.RUNNER_PATH }}/../FlutterIpaExport.ipa
-          tag: ${{ github.sha }}
+          tag: ${{ env.RELEASE_TAG }}
           overwrite: true
-          body: "This is first release"
+          body: "iOS Build - ${{ env.RELEASE_TAG }} - Built on ${{ github.event.head_commit.timestamp || 'unknown' }}"
