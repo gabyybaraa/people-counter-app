@@ -1,10 +1,10 @@
-# TX_door1 - Dual TX Master Hub
+# TX_entrance - Master Hub (Door 1 Entrance TX)
 
 ## Overview
-Advanced master hub that controls dual IR transmitters for Door 1 and provides comprehensive WiFi access point, web dashboard, and API endpoints for the entire people counting system.
+Advanced master hub that controls Door 1 entrance IR transmitter and provides comprehensive WiFi access point, web dashboard, and API endpoints for the entire people counting system.
 
 ## Features
-- **Dual IR Transmitters**: Door 1 Entry (D1) and Exit (D2) IR LEDs
+- **Entrance IR Transmitter**: Door 1 Entry (D1) IR LED
 - **WiFi Access Point**: Creates stable network with multiple fallback options
 - **Professional Web Dashboard**: Real-time counter display with dark theme
 - **Comprehensive API**: Multiple endpoints for Flutter app integration
@@ -21,14 +21,12 @@ Advanced master hub that controls dual IR transmitters for Door 1 and provides c
 ## Pin Configuration
 ```
 Door 1 Entry TX (D1/GPIO5): IR333C LED + 200Ω resistor
-Door 1 Exit TX (D2/GPIO4):  IR333C LED + 200Ω resistor
 ```
 
 ## Wiring Diagram
 ```
 3.3V → 200Ω → IR333C LED → D1 (Entry TX)
-3.3V → 200Ω → IR333C LED → D2 (Exit TX)
-GND → IR333C LED (both LEDs)
+GND → IR333C LED
 ```
 
 ## WiFi Networks (Fallback Order)

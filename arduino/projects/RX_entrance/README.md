@@ -1,13 +1,13 @@
-# RX_door1 - Door 1 IR Receiver Controller
+# RX_entrance - Door 1 Entrance IR Receiver Controller
 
 ## Overview
-Smart IR receiver controller for Door 1 that detects people entering and exiting using bidirectional IR sensors. Connects to Master Hub via WiFi for real-time people counting.
+Smart IR receiver controller for Door 1 entrance that detects people entering using IR sensors. Connects to Master Hub via WiFi for real-time people counting.
 
 ## Features
-- **Bidirectional Detection**: Entry (D6) and Exit (D5) IR sensors
-- **Smart Logic**: Prevents false positives from simultaneous sensor triggers
+- **Entrance Detection**: Entry IR sensor for Door 1
+- **Smart Logic**: Prevents false positives with debounce protection
 - **WiFi Connectivity**: Connects to Master Hub at 192.168.4.1
-- **Real-time Counting**: Sends entry/exit events to Master Hub
+- **Real-time Counting**: Sends entry events to Master Hub
 - **Heartbeat Monitoring**: Continuous status updates to Master Hub
 - **Debounce Protection**: 100ms debounce with 2-second cooldown
 
@@ -19,15 +19,13 @@ Smart IR receiver controller for Door 1 that detects people entering and exiting
 
 ## Pin Configuration
 ```
-Entry Sensor (D6/GPIO12): PT204-6B + 10kΩ resistor
-Exit Sensor (D5/GPIO14):  PT204-6B + 10kΩ resistor
+Entry Sensor (A0): PT204-6B + 10kΩ resistor
 ```
 
 ## Wiring Diagram
 ```
-3.3V → 10kΩ → PT204-6B → D6 (Entry)
-3.3V → 10kΩ → PT204-6B → D5 (Exit)
-GND → PT204-6B (both sensors)
+3.3V → 10kΩ → PT204-6B → A0 (Entry)
+GND → PT204-6B
 ```
 
 ## Network Configuration
@@ -37,11 +35,10 @@ GND → PT204-6B (both sensors)
 - **API Endpoint**: /api/update
 
 ## Detection Logic
-1. **Entry Detection**: Only D6 sensor triggers (D5 must be clear)
-2. **Exit Detection**: Only D5 sensor triggers (D6 must be clear)
-3. **False Positive Prevention**: Both sensors triggering simultaneously = ignored
-4. **Cooldown Period**: 2 seconds between detections
-5. **Debounce**: 100ms verification after initial trigger
+1. **Entry Detection**: A0 sensor triggers when IR beam is broken
+2. **False Positive Prevention**: Debounce protection prevents multiple triggers
+3. **Cooldown Period**: 2 seconds between detections
+4. **Debounce**: 100ms verification after initial trigger
 
 ## Serial Output
 - Device initialization and WiFi connection status
@@ -51,20 +48,18 @@ GND → PT204-6B (both sensors)
 
 ## API Communication
 Sends POST requests to Master Hub with:
-- `sensor`: door1_entry or door1_exit
-- `action`: entry or exit
+- `sensor`: door1_entry
+- `action`: entry
 - `ir_value`: sensor reading
 - `beam_status`: clear
 - `activity_time`: formatted timestamp
-- `device`: RX_door1
+- `device`: RX_entrance
 
 ## Testing
 1. Power on the device
 2. Verify WiFi connection to Master Hub
-3. Test entry sensor (D6) - should count as entry
-4. Test exit sensor (D5) - should count as exit
-5. Test both sensors simultaneously - should be ignored
-6. Verify counts appear on Master Hub dashboard
+3. Test entry sensor (A0) - should count as entry
+4. Verify entry counts appear on Master Hub dashboard
 
 ## Troubleshooting
 - **WiFi Issues**: Check SSID/password, ensure Master Hub is running

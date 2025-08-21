@@ -6,12 +6,13 @@ This directory contains all Arduino projects for the people counting system, inc
 ## Project Structure
 
 ### Door 1 System
-- **TX_door1/dual_tx_master_hub.ino** - Master Hub with WiFi AP and Door 1 IR transmitters
-- **RX_door1/RX_door1.ino** - Door 1 IR receiver for entry/exit detection
+- **TX_entrance/dual_tx_master_hub.ino** - Master Hub (Entrance TX Door 1) with WiFi AP
+- **RX_entrance/RX_entrance.ino** - Door 1 Entrance IR receiver
+- **TX_exit/TX_exit.ino** - Door 1 Exit IR transmitter
+- **RX_exit/RX_exit.ino** - Door 1 Exit IR receiver
 
 ### Door 2 System  
-- **TX_door2/door2_tx_controller.ino** - Door 2 IR transmitter controller
-- **RX_door2/door2_controller.ino** - Door 2 IR receiver for entry/exit detection
+- **External TX/RX system** - Independent Door 2 entry/exit detection
 
 ## Hardware Requirements
 
@@ -39,30 +40,36 @@ This directory contains all Arduino projects for the people counting system, inc
 
 ## System Architecture
 
-### Master Hub (TX_door1)
+### Master Hub (TX_entrance - Door 1 Entrance)
 - Creates WiFi access point
-- Controls Door 1 IR transmitters
+- Controls Door 1 Entrance IR transmitter (D1)
 - Provides web dashboard
 - Receives data from all sensors
 - Tracks people counts
 
-### Door 1 RX (RX_door1)
+### Door 1 Entrance RX (RX_entrance)
 - Connects to Master Hub WiFi
-- Monitors A0 (entry) and D3 (exit) sensors
-- Sends detection events to Master Hub
+- Monitors entrance sensors
+- Sends entry detection events to Master Hub
 - Enhanced connectivity with retry logic
 
-### Door 2 TX (TX_door2)
+### Door 1 Exit TX (TX_exit)
 - Connects to Master Hub WiFi
-- Controls D1 and D2 IR LEDs
+- Controls Door 1 Exit IR transmitter (D2)
 - Sends status updates to Master Hub
 - Monitors WiFi connection health
 
-### Door 2 RX (RX_door2)
+### Door 1 Exit RX (RX_exit)
 - Connects to Master Hub WiFi
-- Monitors D6 (entry) and D5 (exit) sensors
-- Sends detection events to Master Hub
+- Monitors exit sensors
+- Sends exit detection events to Master Hub
 - Simple, proven detection logic
+
+### Door 2 System
+- Independent TX/RX system
+- Connects to Master Hub WiFi
+- Sends entry/exit data to Master Hub
+- Separate from Door 1 system
 
 ## Installation
 
