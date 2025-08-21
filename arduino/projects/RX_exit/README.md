@@ -13,21 +13,21 @@ Smart IR receiver controller for Door 2 that detects people entering and exiting
 
 ## Hardware Requirements
 - **NodeMCU ESP8266** (or compatible ESP8266 board)
-- **2x PT204-6B Phototransistors** (IR receivers)
+- **2x Phototransistors** (IR receivers)
 - **2x 10kΩ Resistors** (for IR receivers)
 - **Breadboard and jumper wires**
 
 ## Pin Configuration
 ```
-Entry Sensor (D6/GPIO12): PT204-6B + 10kΩ resistor
-Exit Sensor (D5/GPIO14):  PT204-6B + 10kΩ resistor
+Entry Sensor (D6/GPIO12): Phototransistor + 10kΩ resistor
+Exit Sensor (D5/GPIO14):  Phototransistor + 10kΩ resistor
 ```
 
 ## Wiring Diagram
 ```
-3.3V → 10kΩ → PT204-6B → D6 (Entry)
-3.3V → 10kΩ → PT204-6B → D5 (Exit)
-GND → PT204-6B (both sensors)
+3.3V → 10kΩ →  Phototransistor → D6 (Entry)
+3.3V → 10kΩ →  Phototransistor → D5 (Exit)
+GND →  Phototransistors (both sensors)
 ```
 
 ## Network Configuration
