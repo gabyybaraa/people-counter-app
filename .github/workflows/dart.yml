@@ -34,7 +34,18 @@ jobs:
       - run: flutter build ios --release --no-codesign
 
    
-      - name: Force clean build artifacts
+      - name: Debug build output
+        run: |
+          echo "=== Build directory contents ==="
+          ls -la build/
+          echo "=== iOS build contents ==="
+          ls -la build/ios/
+          echo "=== iPhoneOS build contents ==="
+          ls -la build/ios/iphoneos/
+        working-directory: .
+
+    
+      - name: clean build artifacts
         run: |
           # Remove Payload directory if it exists
           if [ -d "Payload" ]; then
@@ -52,9 +63,16 @@ jobs:
         run: |
           # Create Payload directory
           mkdir -p Payload
-          # Move Runner.app to Payload
-          mv Runner.app Payload/
-          echo "Payload prepared successfully"
+          # Check if Runner.app exists and move it
+          if [ -d "Runner.app" ]; then
+            mv Runner.app Payload/
+            echo "Runner.app moved to Payload successfully"
+          else
+            echo "ERROR: Runner.app not found!"
+            echo "Available files:"
+            ls -la
+            exit 1
+          fi
         working-directory: build/ios/iphoneos
 
       - name: Zip output
