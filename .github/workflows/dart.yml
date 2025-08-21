@@ -33,7 +33,7 @@ jobs:
 
       - run: flutter build ios --release --no-codesign
 
-     
+      # Debug: Check what was actually built
       - name: Debug build output
         run: |
           echo "=== Build directory contents ==="
@@ -46,7 +46,7 @@ jobs:
           find build/ -name "Runner.app" -type d
         working-directory: .
 
-   
+      # Find the correct path for Runner.app
       - name: Find Runner.app location
         run: |
           RUNNER_PATH=$(find build/ -name "Runner.app" -type d | head -1)
@@ -59,12 +59,13 @@ jobs:
           fi
         working-directory: .
 
-    
+      # Clean and prepare Payload in the correct location
       - name: Prepare Payload
         run: |
           # Get the directory containing Runner.app
           RUNNER_DIR=$(dirname "$RUNNER_PATH")
           echo "Working in directory: $RUNNER_DIR"
+          echo "RUNNER_DIR=$RUNNER_DIR" >> $GITHUB_ENV
           
           # Clean up any existing Payload
           if [ -d "Payload" ]; then
@@ -84,14 +85,18 @@ jobs:
 
       - name: Zip output
         run: |
-          # Get the directory containing Runner.app
-          RUNNER_DIR=$(dirname "$RUNNER_PATH")
-          cd "$RUNNER_DIR"
+          # Create IPA in the same directory as Payload
           zip -qq -r -9 FlutterIpaExport.ipa Payload
-          echo "IPA created successfully"
-        working-directory: .
+          echo "IPA created successfully at: $PWD/FlutterIpaExport.ipa"
+          
+          # Store the full path for upload
+          echo "IPA_PATH=$PWD/FlutterIpaExport.ipa" >> $GITHUB_ENV
+          
+          # Verify the file exists
+          ls -la FlutterIpaExport.ipa
+        working-directory: ${{ env.RUNNER_DIR }}
 
-    
+      # Create a proper release tag
       - name: Create Release Tag
         run: |
           # Create a timestamp-based tag
@@ -109,7 +114,7 @@ jobs:
         uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ${{ env.RUNNER_PATH }}/../FlutterIpaExport.ipa
+          file: ${{ env.IPA_PATH }}
           tag: ${{ env.RELEASE_TAG }}
           overwrite: true
           body: "iOS Build - ${{ env.RELEASE_TAG }} - Built on ${{ github.event.head_commit.timestamp || 'unknown' }}"
