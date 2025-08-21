@@ -13,7 +13,7 @@ Smart IR receiver controller for Door 1 entrance that detects people entering us
 
 ## Hardware Requirements
 - **NodeMCU ESP8266** (or compatible ESP8266 board)
-- **2x PT204-6B Phototransistors** (IR receivers)
+- **2x Phototransistors** (IR receivers)
 - **2x 10kΩ Resistors** (for IR receivers)
 - **Breadboard and jumper wires**
 
@@ -35,7 +35,7 @@ GND → PT204-6B
 - **API Endpoint**: /api/update
 
 ## Detection Logic
-1. **Entry Detection**: A0 sensor triggers when IR beam is broken
+1. **Entry Detection**: D6 sensor triggers when IR beam is broken
 2. **False Positive Prevention**: Debounce protection prevents multiple triggers
 3. **Cooldown Period**: 2 seconds between detections
 4. **Debounce**: 100ms verification after initial trigger
