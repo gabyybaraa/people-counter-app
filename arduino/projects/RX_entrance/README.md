@@ -19,13 +19,13 @@ Smart IR receiver controller for Door 1 entrance that detects people entering us
 
 ## Pin Configuration
 ```
-Entry Sensor (A0): PT204-6B + 10kΩ resistor
+Entry Sensor (D6): Phototransistor + 10kΩ resistor
 ```
 
 ## Wiring Diagram
 ```
-3.3V → 10kΩ → PT204-6B → A0 (Entry)
-GND → PT204-6B
+3.3V → 10kΩ → Phototransistor → D6 (Entry)
+GND → Phototransistor
 ```
 
 ## Network Configuration
@@ -58,7 +58,7 @@ Sends POST requests to Master Hub with:
 ## Testing
 1. Power on the device
 2. Verify WiFi connection to Master Hub
-3. Test entry sensor (A0) - should count as entry
+3. Test entry sensor (D6) - should count as entry
 4. Verify entry counts appear on Master Hub dashboard
 
 ## Troubleshooting
