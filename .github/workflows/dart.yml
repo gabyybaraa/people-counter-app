@@ -10,39 +10,44 @@ jobs:
   build-ios:
     name: iOS Build
     runs-on: macos-latest
-
     steps:
       - uses: actions/checkout@v3
-
+      
       - uses: subosito/flutter-action@v2
         with:
-          channel: stable
+          channel: 'stable'
           architecture: x64
 
-      - run: flutter --version
       - run: flutter pub get
 
-    
-      - name: Install pods
+      - run: pod repo update
         working-directory: ios
+
+      # ADD THIS: Clean previous builds
+      - name: Clean previous builds
         run: |
-          pod install --repo-update
+          flutter clean
+          cd ios
+          rm -rf build/ Payload/ Runner.app/
+          cd ..
 
+      - run: flutter build ios --release --no-codesign
 
-      - name: Flutter iOS build (no codesign)
-        run: flutter build ios --release --no-codesign
-
-
-      - name: Package IPA
+      # ADD THIS: Clean build artifacts
+      - name: Clean build artifacts
         run: |
-          set -euo pipefail
-          cd build/ios/iphoneos
-          rm -rf Payload
+          rm -rf Payload/ Runner.app/
+        working-directory: build/ios/iphoneos
+
+      - name: Prepare Payload
+        run: 
           mkdir Payload
-          # use cp -R so we don't move/rename the source
-          cp -R "Runner.app" Payload/
-          /usr/bin/zip -r -9 FlutterIpaExport.ipa Payload
+          mv Runner.app Payload/
+        working-directory: build/ios/iphoneos
 
+      - name: Zip output
+        run: zip -qq -r -9 FlutterIpaExport.ipa Payload
+        working-directory: build/ios/iphoneos
 
       - name: Upload binaries to release
         uses: svenstaro/upload-release-action@v2
@@ -51,11 +56,4 @@ jobs:
           file: build/ios/iphoneos/FlutterIpaExport.ipa
           tag: ${{ github.sha }}
           overwrite: true
-          body: "Automated iOS IPA build"
-
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: FlutterIpaExport
-          path: build/ios/iphoneos/FlutterIpaExport.ipa
+          body: "This is first release"
